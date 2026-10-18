@@ -1,0 +1,109 @@
+{
+  "name": "v86-vscode",
+  "displayName": "v86 x86 Emulator",
+  "description": "Run Arch Linux and other operating systems directly inside VS Code using v86 WASM x86 emulator",
+  "version": "0.1.0",
+  "publisher": "v86-vscode",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "v86.start",
+        "title": "v86: Launch x86 Emulator",
+        "category": "v86"
+      },
+      {
+        "command": "v86.switchOS",
+        "title": "v86: Switch Operating System",
+        "category": "v86"
+      },
+      {
+        "command": "v86.restart",
+        "title": "v86: Restart Emulator",
+        "category": "v86"
+      },
+      {
+        "command": "v86.stop",
+        "title": "v86: Stop Emulator",
+        "category": "v86"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "v86 Emulator Settings",
+      "properties": {
+        "v86.defaultOS": {
+          "type": "string",
+          "default": "archlinux",
+          "enum": [
+            "archlinux",
+            "alpine",
+            "freedos",
+            "kolibrios",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "Arch Linux x86 (default)",
+            "Alpine Linux x86",
+            "FreeDOS 1.2",
+            "KolibriOS (Graphical OS)",
+            "Custom ISO or Disk Image"
+          ],
+          "description": "Default Operating System preset to boot."
+        },
+        "v86.memoryMB": {
+          "type": "number",
+          "default": 512,
+          "description": "Memory size in MB allocated to v86 emulator."
+        },
+        "v86.vgaMemoryMB": {
+          "type": "number",
+          "default": 8,
+          "description": "VGA memory size in MB."
+        },
+        "v86.customImage": {
+          "type": "object",
+          "description": "Custom OS image settings when defaultOS is set to custom",
+          "properties": {
+            "cdromUrl": {
+              "type": "string",
+              "description": "URL or local path to ISO image"
+            },
+            "fdaUrl": {
+              "type": "string",
+              "description": "URL or local path to Floppy Disk image (.img)"
+            },
+            "hdaUrl": {
+              "type": "string",
+              "description": "URL or local path to Hard Disk image (.img)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test:unit": "mocha out/test/unit.test.js",
+    "test": "npm run compile && npm run test:unit && vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^18.11.9",
+    "@types/vscode": "^1.75.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  }
+}
