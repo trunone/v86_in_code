@@ -308,9 +308,13 @@ export function getWebviewContent(
                 autostart: true
             };
 
-            if (currentOsConfig.bzimageUrl && currentOsConfig.initrdUrl) {
+            if (currentOsConfig.initialStateUrl) {
+                emulatorOptions.initial_state = { url: currentOsConfig.initialStateUrl };
+            } else if (currentOsConfig.bzimageUrl) {
                 emulatorOptions.bzimage = { url: currentOsConfig.bzimageUrl };
-                emulatorOptions.initrd = { url: currentOsConfig.initrdUrl };
+                if (currentOsConfig.initrdUrl) {
+                    emulatorOptions.initrd = { url: currentOsConfig.initrdUrl };
+                }
                 if (currentOsConfig.cmdline) {
                     emulatorOptions.cmdline = currentOsConfig.cmdline;
                 }

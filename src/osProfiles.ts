@@ -3,6 +3,7 @@ export interface OSProfile {
     name: string;
     description: string;
     category: 'linux' | 'dos' | 'other' | 'custom';
+    initialStateUrl?: string;
     cdromUrl?: string;
     fdaUrl?: string;
     hdaUrl?: string;
@@ -17,22 +18,19 @@ export const OS_PRESETS: Record<string, OSProfile> = {
     archlinux: {
         id: 'archlinux',
         name: 'Arch Linux x86',
-        description: 'Lightweight Linux distribution booted with kernel and initrd',
+        description: 'Arch Linux x86 environment booted from state image',
         category: 'linux',
-        bzimageUrl: 'https://copy.sh/v86/images/bzImage',
-        initrdUrl: 'https://copy.sh/v86/images/rootfs.cpio.zst',
-        cmdline: 'console=ttyS0 root=/dev/ram0 rw quiet',
+        initialStateUrl: 'https://c.copy.sh/arch_state-v3.bin.zst',
         memoryMB: 512,
         vgaMemoryMB: 8
     },
     alpine: {
         id: 'alpine',
-        name: 'Alpine Linux x86',
-        description: 'Security-oriented, lightweight Linux distribution based on musl & busybox',
+        name: 'Buildroot / Alpine Linux x86',
+        description: 'Lightweight Linux distribution booted with kernel bzImage',
         category: 'linux',
-        bzimageUrl: 'https://copy.sh/v86/images/alpine-bzImage',
-        initrdUrl: 'https://copy.sh/v86/images/alpine-initrd.img',
-        cmdline: 'console=ttyS0 alpine_repo=https://dl-cdn.alpinelinux.org/alpine/v3.18/main',
+        bzimageUrl: 'https://c.copy.sh/buildroot-bzimage.bin',
+        cmdline: 'tsc=reliable mitigations=off random.trust_cpu=on',
         memoryMB: 256,
         vgaMemoryMB: 8
     },
@@ -41,7 +39,7 @@ export const OS_PRESETS: Record<string, OSProfile> = {
         name: 'FreeDOS 1.2',
         description: 'Free and open source DOS-compatible operating system',
         category: 'dos',
-        fdaUrl: 'https://copy.sh/v86/images/freedos722.img',
+        fdaUrl: 'https://c.copy.sh/freedos722.img',
         memoryMB: 32,
         vgaMemoryMB: 4
     },
@@ -50,7 +48,7 @@ export const OS_PRESETS: Record<string, OSProfile> = {
         name: 'KolibriOS',
         description: 'Tiny & fast assembly-written graphical operating system',
         category: 'other',
-        fdaUrl: 'https://copy.sh/v86/images/kolibri.img',
+        fdaUrl: 'https://c.copy.sh/kolibri.img',
         memoryMB: 128,
         vgaMemoryMB: 8
     },

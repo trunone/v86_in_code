@@ -7,8 +7,7 @@ describe('v86 Extension Unit Tests', () => {
         it('should have Arch Linux as default preset', () => {
             assert.strictEqual(OS_PRESETS.archlinux.id, 'archlinux');
             assert.strictEqual(OS_PRESETS.archlinux.name, 'Arch Linux x86');
-            assert.ok(OS_PRESETS.archlinux.bzimageUrl);
-            assert.ok(OS_PRESETS.archlinux.initrdUrl);
+            assert.ok(OS_PRESETS.archlinux.initialStateUrl);
         });
 
         it('should contain preset profiles for alpine, freedos, kolibrios, and custom', () => {
