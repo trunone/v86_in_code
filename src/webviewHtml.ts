@@ -228,8 +228,27 @@ export function getWebviewContent(
         <span id="info-mem">RAM: ${config.memoryMB} MB | VGA RAM: ${config.vgaMemoryMB} MB</span>
     </footer>
 
+    <script nonce="${nonce}">
+        // Ensure module and exports are undefined in Webview scope so libv86 attaches to window
+        window._savedModule = window.module;
+        window._savedExports = window.exports;
+        window.module = undefined;
+        window.exports = undefined;
+    </script>
     <script src="${config.libv86Url}"></script>
     <script nonce="${nonce}">
+        // Restore module / exports if necessary
+        window.module = window._savedModule;
+        window.exports = window._savedExports;
+
+        // Ensure both V86Starter and V86 constructor aliases exist
+        if (typeof window.V86Starter === 'undefined' && typeof window.V86 === 'function') {
+            window.V86Starter = window.V86;
+        }
+        if (typeof window.V86 === 'undefined' && typeof window.V86Starter === 'function') {
+            window.V86 = window.V86Starter;
+        }
+
         const vscode = acquireVsCodeApi();
 
         const biosUrl = "${config.biosUrl}";
@@ -304,7 +323,12 @@ export function getWebviewContent(
             }
 
             try {
-                emulator = new V86Starter(emulatorOptions);
+                const V86Constructor = window.V86Starter || window.V86;
+                if (typeof V86Constructor !== 'function') {
+                    throw new Error("V86Starter/V86 constructor is not available on window.");
+                }
+
+                emulator = new V86Constructor(emulatorOptions);
 
                 emulator.add_listener("emulator-ready", function() {
                     setStatus('running', 'Running');
