@@ -161,6 +161,7 @@ export function getWebviewContent(
             align-items: center;
             gap: 12px;
             z-index: 10;
+            min-width: 280px;
         }
 
         .spinner {
@@ -170,6 +171,23 @@ export function getWebviewContent(
             border-top-color: var(--vscode-accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--vscode-accent);
+            transition: width 0.2s ease;
         }
 
         @keyframes spin {
@@ -218,6 +236,9 @@ export function getWebviewContent(
         <div id="overlay-status" class="overlay-status">
             <div class="spinner" id="overlay-spinner"></div>
             <div id="overlay-text">Loading v86 x86 Emulator & OS image...</div>
+            <div class="progress-bar-container" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
         </div>
         <!-- Canvas inserted dynamically by v86 -->
         <div id="text-screen"></div>
@@ -266,6 +287,8 @@ export function getWebviewContent(
         const overlayStatus = document.getElementById('overlay-status');
         const overlayText = document.getElementById('overlay-text');
         const overlaySpinner = document.getElementById('overlay-spinner');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
         const osSelect = document.getElementById('os-select');
         const btnPlayPause = document.getElementById('btn-play-pause');
         const btnRestart = document.getElementById('btn-restart');
@@ -278,10 +301,17 @@ export function getWebviewContent(
             statusText.textContent = message;
         }
 
-        function showOverlay(message, showSpinner = true) {
+        function showOverlay(message, showSpinner = true, progressPercent = null) {
             overlayStatus.style.display = 'flex';
             overlayText.textContent = message;
             overlaySpinner.style.display = showSpinner ? 'block' : 'none';
+
+            if (progressPercent !== null && progressPercent >= 0) {
+                progressContainer.style.display = 'block';
+                progressBar.style.width = Math.min(100, Math.max(0, progressPercent)) + '%';
+            } else {
+                progressContainer.style.display = 'none';
+            }
         }
 
         function hideOverlay() {
@@ -290,7 +320,7 @@ export function getWebviewContent(
 
         function initEmulator() {
             setStatus('loading', 'Loading OS Image...');
-            showOverlay('Booting ' + currentOsConfig.name + '...');
+            showOverlay('Booting ' + currentOsConfig.name + '...', true, 0);
 
             // Clear previous canvas if any
             const existingCanvas = screenContainer.querySelector('canvas');
@@ -341,16 +371,27 @@ export function getWebviewContent(
                     btnPlayPause.textContent = 'Pause';
                 });
 
+                emulator.add_listener("emulator-loaded", function() {
+                    setStatus('running', 'Running');
+                    hideOverlay();
+                    isRunning = true;
+                    btnPlayPause.textContent = 'Pause';
+                });
+
                 emulator.add_listener("download-progress", function(e) {
                     if (e && e.loaded && e.total) {
                         const percent = Math.round((e.loaded / e.total) * 100);
-                        showOverlay('Downloading OS components... ' + percent + '%');
+                        const fileLabel = e.file_name ? e.file_name.split('/').pop() : 'OS components';
+                        showOverlay('Loading ' + fileLabel + '... (' + percent + '%)', true, percent);
+                    } else if (e && e.loaded) {
+                        const mbLoaded = (e.loaded / (1024 * 1024)).toFixed(1);
+                        showOverlay('Loading OS components... (' + mbLoaded + ' MB)', true);
                     }
                 });
 
                 emulator.add_listener("download-error", function(e) {
                     setStatus('error', 'Download Failed');
-                    showOverlay('Failed to download OS image files. Check internet connection or image URL.', false);
+                    showOverlay('Failed to download OS image files. Check internet connection or file path.', false);
                 });
 
             } catch (err) {

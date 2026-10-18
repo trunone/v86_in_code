@@ -71,7 +71,6 @@ export class V86Panel {
 
     public async switchOS(osId: string) {
         this._currentOSId = osId;
-        // Also optionally update workspace configuration if desired, or keep as active panel state
         this._update();
     }
 
@@ -89,12 +88,23 @@ export class V86Panel {
             const customImage = config.get<any>('customImage') || {};
             return {
                 ...OS_PRESETS.custom,
-                cdromUrl: customImage.cdromUrl || undefined,
-                fdaUrl: customImage.fdaUrl || undefined,
-                hdaUrl: customImage.hdaUrl || undefined
+                cdromPath: customImage.cdromUrl || customImage.cdromPath || undefined,
+                fdaPath: customImage.fdaUrl || customImage.fdaPath || undefined,
+                hdaPath: customImage.hdaUrl || customImage.hdaPath || undefined
             };
         }
         return OS_PRESETS[osId] || OS_PRESETS.archlinux;
+    }
+
+    private resolveUri(relativePath?: string): string | undefined {
+        if (!relativePath) {
+            return undefined;
+        }
+        if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+            return relativePath;
+        }
+        const fileUri = vscode.Uri.file(path.join(this._extensionUri.fsPath, relativePath));
+        return this._panel.webview.asWebviewUri(fileUri).toString();
     }
 
     private _update() {
@@ -110,6 +120,16 @@ export class V86Panel {
         const wasmUri = webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionUri.fsPath, 'bios', 'v86.wasm')));
         const libv86Uri = webview.asWebviewUri(vscode.Uri.file(path.join(this._extensionUri.fsPath, 'media', 'libv86.js')));
 
+        const osConfigResolved = {
+            ...osProfile,
+            initialStateUrl: this.resolveUri(osProfile.initialStatePath),
+            cdromUrl: this.resolveUri(osProfile.cdromPath),
+            fdaUrl: this.resolveUri(osProfile.fdaPath),
+            hdaUrl: this.resolveUri(osProfile.hdaPath),
+            bzimageUrl: this.resolveUri(osProfile.bzimagePath),
+            initrdUrl: this.resolveUri(osProfile.initrdPath)
+        };
+
         this._panel.title = `v86: ${osProfile.name}`;
 
         this._panel.webview.html = getWebviewContent(
@@ -119,7 +139,7 @@ export class V86Panel {
                 vgaBiosUrl: vgaBiosUri.toString(),
                 wasmUrl: wasmUri.toString(),
                 libv86Url: libv86Uri.toString(),
-                osConfig: osProfile,
+                osConfig: osConfigResolved,
                 allPresets: OS_PRESETS,
                 memoryMB,
                 vgaMemoryMB

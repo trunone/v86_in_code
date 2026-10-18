@@ -3,12 +3,12 @@ export interface OSProfile {
     name: string;
     description: string;
     category: 'linux' | 'dos' | 'other' | 'custom';
-    initialStateUrl?: string;
-    cdromUrl?: string;
-    fdaUrl?: string;
-    hdaUrl?: string;
-    bzimageUrl?: string;
-    initrdUrl?: string;
+    initialStatePath?: string;
+    cdromPath?: string;
+    fdaPath?: string;
+    hdaPath?: string;
+    bzimagePath?: string;
+    initrdPath?: string;
     cmdline?: string;
     memoryMB?: number;
     vgaMemoryMB?: number;
@@ -18,18 +18,18 @@ export const OS_PRESETS: Record<string, OSProfile> = {
     archlinux: {
         id: 'archlinux',
         name: 'Arch Linux x86',
-        description: 'Arch Linux x86 environment booted from state image',
+        description: 'Arch Linux x86 environment booted from pre-built state image',
         category: 'linux',
-        initialStateUrl: 'https://c.copy.sh/arch_state-v3.bin.zst',
+        initialStatePath: 'media/images/arch_state-v3.bin.zst',
         memoryMB: 512,
         vgaMemoryMB: 8
     },
     alpine: {
         id: 'alpine',
-        name: 'Buildroot / Alpine Linux x86',
+        name: 'Buildroot Linux x86',
         description: 'Lightweight Linux distribution booted with kernel bzImage',
         category: 'linux',
-        bzimageUrl: 'https://c.copy.sh/buildroot-bzimage.bin',
+        bzimagePath: 'media/images/buildroot-bzimage.bin',
         cmdline: 'tsc=reliable mitigations=off random.trust_cpu=on',
         memoryMB: 256,
         vgaMemoryMB: 8
@@ -39,7 +39,7 @@ export const OS_PRESETS: Record<string, OSProfile> = {
         name: 'FreeDOS 1.2',
         description: 'Free and open source DOS-compatible operating system',
         category: 'dos',
-        fdaUrl: 'https://c.copy.sh/freedos722.img',
+        fdaPath: 'media/images/freedos722.img',
         memoryMB: 32,
         vgaMemoryMB: 4
     },
@@ -48,7 +48,7 @@ export const OS_PRESETS: Record<string, OSProfile> = {
         name: 'KolibriOS',
         description: 'Tiny & fast assembly-written graphical operating system',
         category: 'other',
-        fdaUrl: 'https://c.copy.sh/kolibri.img',
+        fdaPath: 'media/images/kolibri.img',
         memoryMB: 128,
         vgaMemoryMB: 8
     },
