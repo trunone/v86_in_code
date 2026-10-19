@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { OS_PRESETS, OSProfile } from './osProfiles';
 import { getWebviewContent } from './webviewHtml';
+import { V86Terminal } from './v86Terminal';
 
 export class V86Panel {
     public static currentPanel: V86Panel | undefined;
@@ -11,6 +12,9 @@ export class V86Panel {
     private readonly _extensionUri: vscode.Uri;
     private _disposables: vscode.Disposable[] = [];
     private _currentOSId: string;
+
+    private _v86Terminal?: V86Terminal;
+    private _terminal?: vscode.Terminal;
 
     public static createOrShow(extensionUri: vscode.Uri, initialOSId?: string) {
         const column = vscode.window.activeTextEditor
@@ -50,6 +54,7 @@ export class V86Panel {
         const defaultOS = config.get<string>('defaultOS') || 'archlinux';
         this._currentOSId = initialOSId || defaultOS;
 
+        this._setupTerminal();
         this._update();
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -62,11 +67,32 @@ export class V86Panel {
                             await this.switchOS(message.osId);
                         }
                         break;
+                    case 'serialOutput':
+                        if (message.data && this._v86Terminal) {
+                            this._v86Terminal.handleSerialOutput(message.data);
+                        }
+                        break;
                 }
             },
             null,
             this._disposables
         );
+    }
+
+    private _setupTerminal() {
+        this._v86Terminal = new V86Terminal();
+        this._v86Terminal.setOnInput((data) => {
+            this._panel.webview.postMessage({
+                command: 'serialInput',
+                data: data
+            });
+        });
+
+        this._terminal = vscode.window.createTerminal({
+            name: 'v86 Serial Terminal',
+            pty: this._v86Terminal
+        });
+        this._terminal.show(true);
     }
 
     public async switchOS(osId: string) {
@@ -149,6 +175,10 @@ export class V86Panel {
 
     public dispose() {
         V86Panel.currentPanel = undefined;
+
+        if (this._terminal) {
+            this._terminal.dispose();
+        }
 
         this._panel.dispose();
 

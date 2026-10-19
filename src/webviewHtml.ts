@@ -259,7 +259,7 @@ export function getWebviewContent(
     </div>
 
     <footer class="statusbar">
-        <span id="info-os">OS: ${config.osConfig.name} (Click canvas/terminal to type)</span>
+        <span id="info-os">OS: ${config.osConfig.name} (Type in VS Code Terminal or click screen)</span>
         <span id="info-mem">RAM: ${config.memoryMB} MB | VGA RAM: ${config.vgaMemoryMB} MB</span>
     </footer>
 
@@ -430,6 +430,15 @@ export function getWebviewContent(
 
                 emulator = new V86Constructor(emulatorOptions);
 
+                // Send serial output bytes to extension host for VS Code Terminal integration
+                emulator.add_listener("serial0-output-byte", function(byte) {
+                    const char = String.fromCharCode(byte);
+                    vscode.postMessage({
+                        command: 'serialOutput',
+                        data: char
+                    });
+                });
+
                 emulator.add_listener("emulator-ready", function() {
                     setStatus('running', 'Running');
                     hideOverlay();
@@ -522,10 +531,17 @@ export function getWebviewContent(
             vscode.postMessage({ command: 'switchOS', osId: selectedOS });
         });
 
-        // Listen for messages from extension host
+        // Listen for messages from extension host (including serial terminal input)
         window.addEventListener('message', event => {
             const message = event.data;
             switch (message.command) {
+                case 'serialInput':
+                    if (emulator && message.data) {
+                        for (let i = 0; i < message.data.length; i++) {
+                            emulator.bus.send('serial0-input', message.data.charCodeAt(i));
+                        }
+                    }
+                    break;
                 case 'restart':
                     if (emulator) {
                         emulator.restart();
