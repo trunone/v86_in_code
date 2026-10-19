@@ -121,6 +121,12 @@ export function getWebviewContent(
             position: relative;
             overflow: auto;
             min-height: 200px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        #screen-container:focus {
+            box-shadow: inset 0 0 0 2px var(--vscode-accent);
         }
 
         #screen-container canvas {
@@ -129,6 +135,7 @@ export function getWebviewContent(
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            outline: none;
         }
 
         #text-screen {
@@ -232,7 +239,7 @@ export function getWebviewContent(
         </div>
     </header>
 
-    <div id="screen-container">
+    <div id="screen-container" tabindex="0" title="Click to focus emulator for keyboard input">
         <div id="overlay-status" class="overlay-status">
             <div class="spinner" id="overlay-spinner"></div>
             <div id="overlay-text">Loading v86 x86 Emulator & OS image...</div>
@@ -245,7 +252,7 @@ export function getWebviewContent(
     </div>
 
     <footer class="statusbar">
-        <span id="info-os">OS: ${config.osConfig.name}</span>
+        <span id="info-os">OS: ${config.osConfig.name} (Click screen to type)</span>
         <span id="info-mem">RAM: ${config.memoryMB} MB | VGA RAM: ${config.vgaMemoryMB} MB</span>
     </footer>
 
@@ -295,6 +302,21 @@ export function getWebviewContent(
         const btnScreenshot = document.getElementById('btn-screenshot');
         const btnFullscreen = document.getElementById('btn-fullscreen');
         const screenContainer = document.getElementById('screen-container');
+
+        // Focus screen container automatically on click or load
+        screenContainer.addEventListener('click', () => {
+            screenContainer.focus();
+        });
+
+        // Prevent VS Code webview key bindings from intercepting emulator keystrokes when focused
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement === screenContainer || screenContainer.contains(document.activeElement) || document.activeElement === document.body) {
+                // Prevent browser / VS Code default hotkey actions like Tab navigation or scrolling
+                if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                    e.preventDefault();
+                }
+            }
+        }, true);
 
         function setStatus(state, message) {
             statusDot.className = 'status-dot ' + state;
@@ -369,6 +391,7 @@ export function getWebviewContent(
                     hideOverlay();
                     isRunning = true;
                     btnPlayPause.textContent = 'Pause';
+                    screenContainer.focus();
                 });
 
                 emulator.add_listener("emulator-loaded", function() {
@@ -376,6 +399,7 @@ export function getWebviewContent(
                     hideOverlay();
                     isRunning = true;
                     btnPlayPause.textContent = 'Pause';
+                    screenContainer.focus();
                 });
 
                 emulator.add_listener("download-progress", function(e) {
@@ -414,6 +438,7 @@ export function getWebviewContent(
                 isRunning = true;
                 setStatus('running', 'Running');
                 btnPlayPause.textContent = 'Pause';
+                screenContainer.focus();
             }
         });
 
@@ -421,6 +446,7 @@ export function getWebviewContent(
             if (emulator) {
                 emulator.restart();
                 setStatus('running', 'Running');
+                screenContainer.focus();
             } else {
                 initEmulator();
             }
@@ -459,6 +485,7 @@ export function getWebviewContent(
                 case 'restart':
                     if (emulator) {
                         emulator.restart();
+                        screenContainer.focus();
                     }
                     break;
                 case 'stop':
