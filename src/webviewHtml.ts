@@ -138,18 +138,22 @@ export function getWebviewContent(
             outline: none;
         }
 
-        #text-screen {
-            font-family: "Courier New", Courier, monospace;
-            white-space: pre;
-            line-height: 1.1;
-            font-size: 14px;
-            color: #aaa;
-            background: #000;
-            padding: 10px;
-            overflow: auto;
+        #serial-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
+            background-color: #000000;
+            color: #4ec9b0;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            border: none;
+            padding: 12px;
+            resize: none;
+            outline: none;
             display: none;
+            z-index: 5;
         }
 
         .overlay-status {
@@ -232,6 +236,7 @@ export function getWebviewContent(
                 `).join('')}
             </select>
 
+            <button id="btn-toggle-terminal" title="Toggle Graphical / Serial Terminal">Serial Terminal</button>
             <button id="btn-play-pause" title="Play / Pause">Pause</button>
             <button id="btn-restart" title="Restart Emulator">Restart</button>
             <button id="btn-screenshot" title="Take Screenshot">Screenshot</button>
@@ -240,6 +245,8 @@ export function getWebviewContent(
     </header>
 
     <div id="screen-container" tabindex="0" title="Click to focus emulator for keyboard input">
+        <textarea id="serial-container" placeholder="Serial console terminal..."></textarea>
+
         <div id="overlay-status" class="overlay-status">
             <div class="spinner" id="overlay-spinner"></div>
             <div id="overlay-text">Loading v86 x86 Emulator & OS image...</div>
@@ -252,7 +259,7 @@ export function getWebviewContent(
     </div>
 
     <footer class="statusbar">
-        <span id="info-os">OS: ${config.osConfig.name} (Click screen to type)</span>
+        <span id="info-os">OS: ${config.osConfig.name} (Click canvas/terminal to type)</span>
         <span id="info-mem">RAM: ${config.memoryMB} MB | VGA RAM: ${config.vgaMemoryMB} MB</span>
     </footer>
 
@@ -297,36 +304,58 @@ export function getWebviewContent(
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress-bar');
         const osSelect = document.getElementById('os-select');
+        const btnToggleTerminal = document.getElementById('btn-toggle-terminal');
         const btnPlayPause = document.getElementById('btn-play-pause');
         const btnRestart = document.getElementById('btn-restart');
         const btnScreenshot = document.getElementById('btn-screenshot');
         const btnFullscreen = document.getElementById('btn-fullscreen');
         const screenContainer = document.getElementById('screen-container');
+        const serialContainer = document.getElementById('serial-container');
+
+        let isSerialVisible = false;
 
         function focusEmulator() {
-            screenContainer.focus();
-            const canvas = screenContainer.querySelector('canvas');
-            if (canvas) {
-                canvas.tabIndex = 0;
-                canvas.focus();
+            if (isSerialVisible) {
+                serialContainer.focus();
+            } else {
+                screenContainer.focus();
+                const canvas = screenContainer.querySelector('canvas');
+                if (canvas) {
+                    canvas.tabIndex = 0;
+                    canvas.focus();
+                }
             }
         }
 
-        // Focus screen container automatically on click or load
-        screenContainer.addEventListener('click', () => {
-            focusEmulator();
+        screenContainer.addEventListener('click', (e) => {
+            if (e.target !== serialContainer) {
+                focusEmulator();
+            }
+        });
+
+        btnToggleTerminal.addEventListener('click', () => {
+            isSerialVisible = !isSerialVisible;
+            if (isSerialVisible) {
+                serialContainer.style.display = 'block';
+                serialContainer.focus();
+                btnToggleTerminal.textContent = 'Graphical Display';
+            } else {
+                serialContainer.style.display = 'none';
+                focusEmulator();
+                btnToggleTerminal.textContent = 'Serial Terminal';
+            }
         });
 
         // Prevent VS Code keyboard navigation hotkeys from unfocusing or scrolling screen container
         window.addEventListener('keydown', (e) => {
             if (!emulator || !isRunning) return;
 
-            // Don't intercept when user is interacting with OS selection dropdown or control buttons
-            if (e.target && (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT')) {
+            // Don't intercept when user is interacting with controls or serial terminal
+            if (e.target && (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target === serialContainer)) {
                 return;
             }
 
-            // Prevent default browser/VS Code shortcuts for navigation keys
+            // Prevent default browser/VS Code shortcuts for navigation keys when focused on canvas
             if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace', 'Enter', 'Escape'].includes(e.code)) {
                 e.preventDefault();
             }
@@ -369,6 +398,7 @@ export function getWebviewContent(
                 memory_size: memoryMB * 1024 * 1024,
                 vga_memory_size: vgaMemoryMB * 1024 * 1024,
                 screen_container: screenContainer,
+                serial_container: serialContainer,
                 bios: { url: biosUrl },
                 vga_bios: { url: vgaBiosUrl },
                 autostart: true
