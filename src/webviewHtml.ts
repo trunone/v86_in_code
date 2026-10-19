@@ -125,7 +125,7 @@ export function getWebviewContent(
             cursor: pointer;
         }
 
-        #screen-container:focus {
+        #screen-container:focus, #screen-container:focus-within {
             box-shadow: inset 0 0 0 2px var(--vscode-accent);
         }
 
@@ -303,18 +303,32 @@ export function getWebviewContent(
         const btnFullscreen = document.getElementById('btn-fullscreen');
         const screenContainer = document.getElementById('screen-container');
 
+        function focusEmulator() {
+            screenContainer.focus();
+            const canvas = screenContainer.querySelector('canvas');
+            if (canvas) {
+                canvas.tabIndex = 0;
+                canvas.focus();
+            }
+        }
+
         // Focus screen container automatically on click or load
         screenContainer.addEventListener('click', () => {
-            screenContainer.focus();
+            focusEmulator();
         });
 
-        // Prevent VS Code webview key bindings from intercepting emulator keystrokes when focused
+        // Prevent VS Code keyboard navigation hotkeys from unfocusing or scrolling screen container
         window.addEventListener('keydown', (e) => {
-            if (document.activeElement === screenContainer || screenContainer.contains(document.activeElement) || document.activeElement === document.body) {
-                // Prevent browser / VS Code default hotkey actions like Tab navigation or scrolling
-                if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-                    e.preventDefault();
-                }
+            if (!emulator || !isRunning) return;
+
+            // Don't intercept when user is interacting with OS selection dropdown or control buttons
+            if (e.target && (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT')) {
+                return;
+            }
+
+            // Prevent default browser/VS Code shortcuts for navigation keys
+            if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace', 'Enter', 'Escape'].includes(e.code)) {
+                e.preventDefault();
             }
         }, true);
 
@@ -391,7 +405,7 @@ export function getWebviewContent(
                     hideOverlay();
                     isRunning = true;
                     btnPlayPause.textContent = 'Pause';
-                    screenContainer.focus();
+                    focusEmulator();
                 });
 
                 emulator.add_listener("emulator-loaded", function() {
@@ -399,7 +413,7 @@ export function getWebviewContent(
                     hideOverlay();
                     isRunning = true;
                     btnPlayPause.textContent = 'Pause';
-                    screenContainer.focus();
+                    focusEmulator();
                 });
 
                 emulator.add_listener("download-progress", function(e) {
@@ -438,7 +452,7 @@ export function getWebviewContent(
                 isRunning = true;
                 setStatus('running', 'Running');
                 btnPlayPause.textContent = 'Pause';
-                screenContainer.focus();
+                focusEmulator();
             }
         });
 
@@ -446,7 +460,7 @@ export function getWebviewContent(
             if (emulator) {
                 emulator.restart();
                 setStatus('running', 'Running');
-                screenContainer.focus();
+                focusEmulator();
             } else {
                 initEmulator();
             }
@@ -485,7 +499,7 @@ export function getWebviewContent(
                 case 'restart':
                     if (emulator) {
                         emulator.restart();
-                        screenContainer.focus();
+                        focusEmulator();
                     }
                     break;
                 case 'stop':
